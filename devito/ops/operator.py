@@ -31,9 +31,9 @@ class OperatorOPS(Operator):
 
         assert (d == dims[0] for d in dims), "The OPS backend currently assumes that all kernels have the same number of dimension"
         
+        self._headers.append(namespace['ops-define-dimension'](dims[0]))
         self._includes.append('stdio.h')
-        self._headers.append('#define OPS_%sD' % dims[0])
-
+            
         body = [ops_init, iet, ops_timing, ops_exit]
         
         return List(body=body)
