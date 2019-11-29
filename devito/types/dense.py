@@ -1015,6 +1015,27 @@ class Function(DiscreteFunction, Differentiable):
                 else:
                     loc_shape.append(s)
             shape = tuple(loc_shape)
+
+        # If a subdomain is defined, we need to update the shape to match the
+        # subdomain size.
+        subdomain = kwargs.get('subdomain')
+        from devito import SubDomain
+        if subdomain and isinstance(subdomain, SubDomain):
+            for k, v in subdomain.define(dimensions or grid.dimensions).items():
+
+                # Case in which this subdmoain dimensions has the same size as the grid.
+                if isinstance(v, Dimension):
+                    print(v)
+                    continue
+
+                side, *thickness = v
+                if side == 'middle':
+                    print(side, *thickness)
+                elif side == 'left':
+                    print(side, *thickness)
+                elif side == 'right':
+                    print(side, *thickness)
+
         return shape
 
     def __halo_setup__(self, **kwargs):
@@ -1114,7 +1135,6 @@ class Function(DiscreteFunction, Differentiable):
     # Pickling support
     _pickle_kwargs = DiscreteFunction._pickle_kwargs +\
         ['space_order', 'shape_global', 'dimensions']
-
 
 class TimeFunction(Function):
 
