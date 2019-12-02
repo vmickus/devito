@@ -1019,22 +1019,27 @@ class Function(DiscreteFunction, Differentiable):
         # If a subdomain is defined, we need to update the shape to match the
         # subdomain size.
         subdomain = kwargs.get('subdomain')
-        from devito import SubDomain
+        from devito import SubDomain # noqa
+        shape_builder = []
         if subdomain and isinstance(subdomain, SubDomain):
-            for k, v in subdomain.define(dimensions or grid.dimensions).items():
+            for i, (k, v) in enumerate(subdomain.define(dimensions or grid.dimensions).
+                items()):
 
-                # Case in which this subdmoain dimensions has the same size as the grid.
+                # Case in which this subdomain dimensions has the same size as the grid.
                 if isinstance(v, Dimension):
-                    print(v)
+                    shape_builder.append(shape[i])
                     continue
 
                 side, *thickness = v
                 if side == 'middle':
-                    print(side, *thickness)
+                    shape_builder.append(shape[i] - (thickness[0] - 1 + thickness[1] - 1))
                 elif side == 'left':
-                    print(side, *thickness)
+                    shape_builder.append(thickness[0])
                 elif side == 'right':
-                    print(side, *thickness)
+                    shape_builder.append(shape[i] - thickness[0])
+
+            shape = tuple(shape_builder) if shape_builder else shape
+            print(shape)
 
         return shape
 
