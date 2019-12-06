@@ -345,11 +345,13 @@ class SubDomain(object):
         self._dimensions = None
 
     def __subdomain_finalize__(self, dimensions, shape):
-        # Create the SubDomain's SubDimensions
+        # Create the SubDomain's SubDimensions and compute the shape
         sub_dimensions = []
-        for k, v in self.define(dimensions).items():
+        shape_builder = []
+        for (k, v), s in zip(self.define(dimensions).items(), shape):
             if isinstance(v, Dimension):
                 sub_dimensions.append(v)
+                shape_builder.append(s)
             else:
                 try:
                     # Case ('middle', int, int)
@@ -359,6 +361,9 @@ class SubDomain(object):
                     sub_dimensions.append(SubDimension.middle('%si' % k.name, k,
                                                               thickness_left,
                                                               thickness_right))
+
+                    shape_builder.append(s - thickness_left - thickness_right)
+
                 except ValueError:
                     side, thickness = v
                     if side == 'left':
@@ -369,11 +374,12 @@ class SubDomain(object):
                                                                  thickness))
                     else:
                         raise ValueError("Expected sides 'left|right', not `%s`" % side)
-        self._dimensions = tuple(sub_dimensions)
 
-        # Compute the SubDomain shape
-        self._shape = tuple(s - (sum(d._thickness_map.values()) if d.is_Sub else 0)
-                            for d, s in zip(self._dimensions, shape))
+                    shape_builder.append(thickness)
+
+        self._dimensions = tuple(sub_dimensions)
+        self._shape = tuple(shape_builder)
+
 
     def __eq__(self, other):
         if not isinstance(other, SubDomain):
