@@ -15,7 +15,7 @@ from devito.ir.stree import st_build
 from devito.operator.profiling import create_profile
 from devito.mpi import MPI
 from devito.parameters import configuration
-from devito.symbolics import indexify
+from devito.symbolics import indexify, retrieve_functions
 from devito.targets import iet_lower
 from devito.tools import (DAG, Signer, ReducerMap, as_tuple, flatten, filter_ordered,
                           filter_sorted, split, timed_pass, timed_region)
@@ -291,6 +291,11 @@ class Operator(Callable):
             * Specialize (e.g., index shifting)
         """
         subs = kwargs.get("subs", {})
+
+        for e in expressions:
+            for f in retrieve_functions(e):
+                if f.subdomain:
+                    f.apply_sub_map()
 
         expressions = cls._add_implicit(expressions)
         expressions = [i.evaluate for i in expressions]

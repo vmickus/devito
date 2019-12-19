@@ -21,7 +21,7 @@ from devito.symbolics import FieldFromPointer
 from devito.finite_differences import Differentiable, generate_fd_shortcuts
 from devito.tools import (EnrichedTuple, ReducerMap, as_tuple, flatten, is_integer,
                           ctypes_to_cstr, memoized_meth, dtype_to_ctype)
-from devito.types.dimension import Dimension
+from devito.types.dimension import Dimension, SubDimension
 from devito.types.args import ArgProvider
 from devito.types.caching import CacheManager
 from devito.types.basic import AbstractFunction
@@ -944,6 +944,13 @@ class Function(DiscreteFunction, Differentiable):
         self._is_parameter = kwargs.get('parameter', False)
 
         self._subdomain = kwargs.get('subdomain', None)
+        if self._subdomain:
+            d_sub_builder = []
+            for e, d in enumerate(self._subdomain.dimensions):
+                # Shift the initial position to the beginning of the array.
+                d_sub_builder.append(SubDimension.left('submap_%s' % d.name,
+                    parent=d.root, thickness=self.shape[e]))
+            self._dimensions_mapper = tuple(d_sub_builder)
 
     @property
     def is_parameter(self):
@@ -982,6 +989,10 @@ class Function(DiscreteFunction, Differentiable):
     @property
     def is_Staggered(self):
         return self.staggered is not None
+
+    @property
+    def subdomain(self):
+        return self._subdomain
 
     @classmethod
     def __shape_setup__(cls, **kwargs):
@@ -1023,6 +1034,7 @@ class Function(DiscreteFunction, Differentiable):
 
         if subdomain:
             shape = subdomain.shape
+
         return shape
 
     def __halo_setup__(self, **kwargs):
@@ -1119,9 +1131,17 @@ class Function(DiscreteFunction, Differentiable):
         tot = self.sum(p, dims)
         return tot / len(tot.args)
 
+
+    def apply_sub_map(self):
+        if not self.subdomain:
+            return
+
+        self._dimensions = self._dimensions_mapper
+
     # Pickling support
     _pickle_kwargs = DiscreteFunction._pickle_kwargs +\
         ['space_order', 'shape_global', 'dimensions']
+
 
 class TimeFunction(Function):
 
