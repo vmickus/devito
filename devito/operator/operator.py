@@ -251,6 +251,26 @@ class Operator(Callable):
                 processed.append(e)
         return processed
 
+    def _shift_function_accesses(self, expressions):
+        """
+        Shift the dimension for Function with SubDomain attached.
+
+        If a Function has a SubDomain attached, the data is allocated with the exactly
+        size required by the SubDomain. Accessing the data from this Function requires a
+        shift in its indices.
+        """
+        processed = []
+        for e in expressions:
+            mapper = OrderedDict()
+            for f in retrieve_functions(e):
+                if f.subdomain:
+                    new_f = f
+                    for d, s_d in zip(f.dimensions, f.subdomain.dimensions):
+                        new_f = new_f.subs({d: d - s_d.thickness.left[0]})
+                    mapper.update(OrderedDict([(f, new_f) for d in f.dimensions]))
+            processed.append(e.xreplace(mapper))
+        return processed
+
     @classmethod
     def _initialize_state(cls, **kwargs):
         return {'optimizations': {k: kwargs.get(k, configuration[k])
