@@ -58,6 +58,8 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         # Staggering metadata
         self._staggered = self.__staggered_setup__(**kwargs)
 
+        self._subdomain = kwargs.get('subdomain', None)
+
         # Now that *all* __X_setup__ hooks have been called, we can let the
         # superclass constructor do its job
         super(DiscreteFunction, self).__init_finalize__(*args, **kwargs)
@@ -201,6 +203,10 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
     def coefficients(self):
         """Form of the coefficients of the function."""
         return self._coefficients
+
+    @property
+    def subdomain(self):
+        return self._subdomain
 
     @cached_property
     def _coeff_symbol(self):
@@ -355,10 +361,16 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         """
         Tuple of Decomposition objects, representing the domain decomposition.
         None is used as a placeholder for non-decomposed Dimensions.
+        In case of Function over a subdomain, the subdomain dimension is used.
         """
         if self._distributor is None:
             return (None,)*self.ndim
+
         mapper = {d: self._distributor.decomposition[d] for d in self._dist_dimensions}
+
+        if self.subdomain:
+                return tuple(mapper.get(d) for d in self.subdomain.dimensions)
+
         return tuple(mapper.get(d) for d in self.dimensions)
 
     @cached_property
@@ -366,9 +378,15 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         """
         Tuple of Decomposition objects, representing the domain+outhalo
         decomposition. None is used as a placeholder for non-decomposed Dimensions.
+        In case of Function over a subdomain, the subdomain dimension is used.
         """
         if self._distributor is None:
             return (None,)*self.ndim
+
+        if self.subdomain:
+            return tuple(v.reshape(*self._size_inhalo[d]) if v is not None else v
+                     for d, v in zip(self.subdomain.dimensions, self._decomposition))
+
         return tuple(v.reshape(*self._size_inhalo[d]) if v is not None else v
                      for d, v in zip(self.dimensions, self._decomposition))
 
@@ -943,7 +961,6 @@ class Function(DiscreteFunction, Differentiable):
         # parameter has to be computed at x + hx/2)
         self._is_parameter = kwargs.get('parameter', False)
 
-        self._subdomain = kwargs.get('subdomain', None)
         if self._subdomain:
             d_sub_builder = []
             for e, d in enumerate(self._subdomain.dimensions):
@@ -989,10 +1006,6 @@ class Function(DiscreteFunction, Differentiable):
     @property
     def is_Staggered(self):
         return self.staggered is not None
-
-    @property
-    def subdomain(self):
-        return self._subdomain
 
     @classmethod
     def __shape_setup__(cls, **kwargs):
@@ -1131,12 +1144,6 @@ class Function(DiscreteFunction, Differentiable):
         tot = self.sum(p, dims)
         return tot / len(tot.args)
 
-
-    def apply_sub_map(self):
-        if not self.subdomain:
-            return
-
-        self._dimensions = self._dimensions_mapper
 
     # Pickling support
     _pickle_kwargs = DiscreteFunction._pickle_kwargs +\
