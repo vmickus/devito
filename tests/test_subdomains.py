@@ -166,39 +166,53 @@ class TestSubdomains(object):
 
     def test_func_allocation(self):
 
-        class MySubdomain(SubDomain):
-            name = 'my_subdomain'
+        class SubDomain_Left(SubDomain):
+            name = 'sd_left'
+
+            def define(self, dimensions):
+                x, y = dimensions
+                # Create 2 points in the left of x and y dimensions
+                return {x: ('left', 2), y: ('left', 2)}
+
+        class SubDomain_Middle(SubDomain):
+            name = 'sd_middle'
 
             def define(self, dimensions):
                 x, y = dimensions
                 # Create 2 points in the left x dimension and
                 # 2 points in the right y dimension
-                return {x: ('left', 2), y: ('right', 2)}
+                return {x: ('middle', 4, 4), y: ('middle', 4, 4)}
 
-        my_sd = MySubdomain()
-        grid = Grid((10,10), subdomains=(my_sd))
+        sd_left = SubDomain_Left()
+        sd_middle = SubDomain_Middle()
 
-        u = Function(name='u', grid=grid, subdomain=my_sd)
+        grid = Grid((10,10), subdomains=(sd_left, sd_middle))
+
+        u1 = Function(name='u1', grid=grid, subdomain=sd_left)
+        u2 = Function(name='u2', grid=grid, subdomain=sd_middle)
         v = Function(name='v', grid=grid)
 
         # u should have 4 points per the my_subdomain description in a 2x2 matrix
-        assert u.shape == (2, 2)
+        assert u1.shape == (2, 2)
+        assert u2.shape == (2, 2)
 
         # Initialize u data with ones
-        u.data[:] = 1
+        u1.data[:] = 1
+        u2.data[:] = 0
 
         # Apply the equation only to defined subdomain
-        eqn = Eq(v, u + 1, subdomain=grid.subdomains['my_subdomain'])
+        eqn1 = Eq(v, u1 + 1, subdomain=grid.subdomains['sd_left'])
+        eqn2 = Eq(v, u2 + 1, subdomain=grid.subdomains['sd_middle'])
 
-        op = Operator(eqn)
+        op = Operator([eqn1, eqn2])
         op.apply()
 
-        expected = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 2., 2.],
-                             [0., 0., 0., 0., 0., 0., 0., 0., 2., 2.],
+        expected = np.array([[2., 2., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [2., 2., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [0., 0., 0., 0., 1., 1., 0., 0., 0., 0.],
+                             [0., 0., 0., 0., 1., 1., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],

@@ -1144,6 +1144,11 @@ class Function(DiscreteFunction, Differentiable):
         tot = self.sum(p, dims)
         return tot / len(tot.args)
 
+    def apply_sub_map(self):
+        if not self.subdomain:
+            return
+
+        self._dimensions = self._dimensions_mapper
 
     # Pickling support
     _pickle_kwargs = DiscreteFunction._pickle_kwargs +\
