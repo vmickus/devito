@@ -179,44 +179,51 @@ class TestSubdomains(object):
 
             def define(self, dimensions):
                 x, y = dimensions
-                # Create 2 points in the left x dimension and
-                # 2 points in the right y dimension
+                # Create a 2x2 subdomain in the middle of the grid.
                 return {x: ('middle', 4, 4), y: ('middle', 4, 4)}
+
+        class SubDomain_Right(SubDomain):
+            name = 'sd_right'
+
+            def define(self, dimensions):
+                x, y = dimensions
+                # Create a 2x2 subdomain in the middle of the grid.
+                return {x: ('right', 2), y: ('right', 2)}
 
         sd_left = SubDomain_Left()
         sd_middle = SubDomain_Middle()
+        sd_right = SubDomain_Right()
 
-        grid = Grid((10,10), subdomains=(sd_left, sd_middle))
+        grid = Grid((10,10), subdomains=(sd_left, sd_middle, sd_right))
 
         u1 = Function(name='u1', grid=grid, subdomain=sd_left)
         u2 = Function(name='u2', grid=grid, subdomain=sd_middle)
+        u3 = Function(name='u3', grid=grid, subdomain=sd_right)
         v = Function(name='v', grid=grid)
 
-        # u should have 4 points per the my_subdomain description in a 2x2 matrix
+        # All u Functions is defined as a 2x2 grid
         assert u1.shape == (2, 2)
         assert u2.shape == (2, 2)
+        assert u3.shape == (2, 2)
 
-        # Initialize u data with ones
-        u1.data[:] = 1
-        u2.data[:] = 0
-
-        # Apply the equation only to defined subdomain
+        # Apply equations to each subdomain
         eqn1 = Eq(v, u1 + 1, subdomain=grid.subdomains['sd_left'])
-        eqn2 = Eq(v, u2 + 1, subdomain=grid.subdomains['sd_middle'])
+        eqn2 = Eq(v, u2 + 2, subdomain=grid.subdomains['sd_middle'])
+        eqn3 = Eq(v, u2 + 3, subdomain=grid.subdomains['sd_right'])
 
-        op = Operator([eqn1, eqn2])
+        op = Operator([eqn1, eqn2, eqn3])
         op.apply()
 
-        expected = np.array([[2., 2., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [2., 2., 0., 0., 0., 0., 0., 0., 0., 0.],
+        expected = np.array([[1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 1., 1., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 1., 1., 0., 0., 0., 0.],
+                             [0., 0., 0., 0., 2., 2., 0., 0., 0., 0.],
+                             [0., 0., 0., 0., 2., 2., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                              [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=np.float32)
+                             [0., 0., 0., 0., 0., 0., 0., 0., 3., 3.],
+                             [0., 0., 0., 0., 0., 0., 0., 0., 3., 3.]], dtype=np.float32)
 
         assert ((np.array(v.data[:]) == expected).all())
 
