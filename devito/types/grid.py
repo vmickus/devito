@@ -380,7 +380,6 @@ class SubDomain(object):
         self._dimensions = tuple(sub_dimensions)
         self._shape = tuple(shape_builder)
 
-
     def __eq__(self, other):
         if not isinstance(other, SubDomain):
             return False

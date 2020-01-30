@@ -166,9 +166,12 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
 
     def __distributor_setup__(self, **kwargs):
         grid = kwargs.get('grid')
+        subdomain = kwargs.get('subdomain')
         # There may or may not be a `Distributor`. In the latter case, the
         # DiscreteFunction is to be considered "local" to each MPI rank
-        return kwargs.get('distributor') if grid is None else grid.distributor
+        dist = kwargs.get('distributor') if grid is None else grid.distributor
+
+        return dist
 
     @cached_property
     def _functions(self):
@@ -361,15 +364,11 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         """
         Tuple of Decomposition objects, representing the domain decomposition.
         None is used as a placeholder for non-decomposed Dimensions.
-        In case of Function over a subdomain, the subdomain dimension is used.
         """
         if self._distributor is None:
             return (None,)*self.ndim
 
         mapper = {d: self._distributor.decomposition[d] for d in self._dist_dimensions}
-
-        if self.subdomain:
-                return tuple(mapper.get(d) for d in self.subdomain.dimensions)
 
         return tuple(mapper.get(d) for d in self.dimensions)
 
@@ -378,14 +377,9 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         """
         Tuple of Decomposition objects, representing the domain+outhalo
         decomposition. None is used as a placeholder for non-decomposed Dimensions.
-        In case of Function over a subdomain, the subdomain dimension is used.
         """
         if self._distributor is None:
             return (None,)*self.ndim
-
-        if self.subdomain:
-            return tuple(v.reshape(*self._size_inhalo[d]) if v is not None else v
-                     for d, v in zip(self.subdomain.dimensions, self._decomposition))
 
         return tuple(v.reshape(*self._size_inhalo[d]) if v is not None else v
                      for d, v in zip(self.dimensions, self._decomposition))
@@ -596,6 +590,7 @@ class DiscreteFunction(AbstractFunction, ArgProvider):
         """Tuple of MPI-distributed Dimensions."""
         if self._distributor is None:
             return ()
+
         return tuple(d for d in self.dimensions if d in self._distributor.dimensions)
 
     @property
@@ -966,8 +961,12 @@ class Function(DiscreteFunction, Differentiable):
             for e, d in enumerate(self._subdomain.dimensions):
                 # Shift the initial position to the beginning of the array.
                 d_sub_builder.append(SubDimension.left('submap_%s' % d.name,
-                    parent=d.root, thickness=self.shape[e]))
+                                     parent=d.root, thickness=self.shape[e]))
             self._dimensions_mapper = tuple(d_sub_builder)
+
+            if self._distributor:
+                from devito.mpi import Distributor
+                self._distributor = Distributor(self.shape, self._dimensions_mapper, self._distributor.comm)
 
     @property
     def is_parameter(self):
@@ -1144,11 +1143,14 @@ class Function(DiscreteFunction, Differentiable):
         tot = self.sum(p, dims)
         return tot / len(tot.args)
 
-    def apply_sub_map(self):
+    def apply_submap(self):
         if not self.subdomain:
             return
 
-        self._dimensions = self._dimensions_mapper
+        if self._distributor:
+            self._dimensions = tuple([d for d in self._distributor.dimensions])
+        else:
+            self._dimensions = self._dimensions_mapper
 
     # Pickling support
     _pickle_kwargs = DiscreteFunction._pickle_kwargs +\

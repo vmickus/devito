@@ -1,9 +1,11 @@
-import numpy as np
 from math import floor
+import numpy as np
+import pytest
 
 from conftest import skipif
 from devito import (Grid, Function, TimeFunction, Eq, solve, Operator, SubDomain,
                     SubDomainSet, Dimension)
+from devito.data import LEFT, RIGHT
 
 pytestmark = skipif(['yask', 'ops'])
 
@@ -194,7 +196,7 @@ class TestSubdomains(object):
         sd_middle = SubDomain_Middle()
         sd_right = SubDomain_Right()
 
-        grid = Grid((10,10), subdomains=(sd_left, sd_middle, sd_right))
+        grid = Grid((10, 10), subdomains=(sd_left, sd_middle, sd_right))
 
         u1 = Function(name='u1', grid=grid, subdomain=sd_left)
         u2 = Function(name='u2', grid=grid, subdomain=sd_middle)
@@ -227,3 +229,80 @@ class TestSubdomains(object):
 
         assert ((np.array(v.data[:]) == expected).all())
 
+    @pytest.mark.parallel(mode=4)
+    def test_function_subdomain_mpi(self):
+        """
+        Tests with the Function is allocated with the correct size, and if it works with
+        mpi.
+        Expected output:
+
+              rank0         rank1
+            0 0 0 0 0     0 0 0 0 0
+            0 0 0 0 0     0 0 0 0 0
+            0 0 0 0 0     0 0 0 0 0
+            0 0 0 2 2     2 2 0 0 0
+            0 0 0 2 2     2 2 0 0 0
+
+              rank2         rank3
+            0 0 0 2 2     2 2 0 0 0
+            0 0 0 2 2     2 2 0 0 0
+            0 0 0 0 0     0 0 0 0 0
+            0 0 0 0 0     0 0 0 0 0
+            0 0 0 0 0     0 0 0 0 0
+        """
+
+        class SubDomain_Middle(SubDomain):
+            name = 'sd_middle'
+
+            def define(self, dimensions):
+                x, y = dimensions
+                # Create a 3x3 subdomain in the middle of the grid.
+                return {x: ('middle', 3, 3), y: ('middle', 3, 3)}
+
+        sd_middle = SubDomain_Middle()
+
+        grid = Grid((10, 10), subdomains=(sd_middle))
+        x, y = grid.dimensions
+
+        u = Function(name='u', grid=grid, subdomain=sd_middle)
+        v = Function(name='v', grid=grid)
+
+        assert u.shape == (4, 4)
+
+        eqn = Eq(v, u + 2, subdomain=grid.subdomains['sd_middle'])
+
+        op = Operator(eqn)
+        op.apply()
+
+        glb_pos_map = grid.distributor.glb_pos_map
+        if LEFT in glb_pos_map[x] and LEFT in glb_pos_map[y]:
+            expected = np.array([[0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 2., 2.,],
+                                 [0., 0., 0., 2., 2.,]], dtype=np.float)
+            assert ((np.array(v.data[:]) == expected).all())
+
+        elif LEFT in glb_pos_map[x] and RIGHT in glb_pos_map[y]:
+            expected = np.array([[0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [2., 2., 0., 0., 0.,],
+                                 [2., 2., 0., 0., 0.,]], dtype=np.float)
+            assert ((np.array(v.data[:]) == expected).all())
+
+        elif RIGHT in glb_pos_map[x] and LEFT in glb_pos_map[y]:
+            expected = np.array([[0., 0., 0., 2., 2.,],
+                                 [0., 0., 0., 2., 2.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,]], dtype=np.float)
+            assert ((np.array(v.data[:]) == expected).all())
+
+        elif RIGHT in glb_pos_map[x] and RIGHT in glb_pos_map[y]:
+            expected = np.array([[2., 2., 0., 0., 0.,],
+                                 [2., 2., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,],
+                                 [0., 0., 0., 0., 0.,]], dtype=np.float)
+            assert ((np.array(v.data[:]) == expected).all())

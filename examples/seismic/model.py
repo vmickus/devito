@@ -316,9 +316,9 @@ class ModelElastic(GenericModel):
         The damping field for absorbing boundary condition.
     """
     def __init__(self, origin, spacing, shape, space_order, vp, vs, rho, nbl=20,
-                 dtype=np.float32):
+                 subdomains=(), dtype=np.float32):
         super(ModelElastic, self).__init__(origin, spacing, shape, space_order,
-                                           nbl=nbl, dtype=dtype,
+                                           nbl=nbl, dtype=dtype, subdomains=subdomains,
                                            damp_mask=True)
 
         self.maxvp = np.max(vp)

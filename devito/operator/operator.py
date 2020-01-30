@@ -221,6 +221,22 @@ class Operator(Callable):
     # Compilation
 
     @classmethod
+    def _apply_submap(cls, expressions):
+        """
+        Shift indices for Function defined over a subdomain.
+
+        Functions in a subdomain need their indices shifted so the region accessed is
+        valid.
+        """
+        for e in expressions:
+            for f in retrieve_functions(e):
+                if f.subdomain:
+                    f.apply_submap()
+
+        return expressions
+
+
+    @classmethod
     def _add_implicit(cls, expressions):
         """
         Create and add any associated implicit expressions.
@@ -312,11 +328,7 @@ class Operator(Callable):
         """
         subs = kwargs.get("subs", {})
 
-        for e in expressions:
-            for f in retrieve_functions(e):
-                if f.subdomain:
-                    f.apply_sub_map()
-
+        expressions = cls._apply_submap(expressions)
         expressions = cls._add_implicit(expressions)
         expressions = [i.evaluate for i in expressions]
         expressions = [j for i in expressions for j in i._flatten]
