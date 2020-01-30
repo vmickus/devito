@@ -1,13 +1,14 @@
 from devito import Eq
 from devito.ir.clusters import Toposort
 from devito.ir.equations import ClusterizedEq
-from devito.ir.iet import Call, Expression, find_affine_trees
+from devito.ir.iet import Call, Expression, List, find_affine_trees
 from devito.ir.iet.visitors import FindSymbols, Transformer
 from devito.logger import warning
 from devito.operator import Operator
 from devito.ops import ops_configuration
 from devito.ops.types import OpsBlock
-from devito.ops.transformer import create_ops_dat, create_ops_fetch, opsit
+from devito.ops.transformer import (create_ops_dat, create_ops_fetch,
+                                    create_ops_memory_fetch, create_ops_memory_set, opsit)
 from devito.ops.utils import namespace
 from devito.passes.clusters import Lift, fuse, scalarize, eliminate_arrays, rewrite
 from devito.passes.iet import DataManager, iet_pass
@@ -138,13 +139,25 @@ def make_ops_kernels(iet):
     mapper = {}
     ffuncs = []
     for n, (_, tree) in enumerate(affine_trees):
-        pre_loop, ops_kernel, ops_par_loop_call = opsit(
+        pre_loop, ops_kernel, ops_par_loop_call, accessibles_info = opsit(
             tree, n, name_to_ops_dat, ops_block, dims[0]
         )
 
         pre_time_loop.extend(pre_loop)
         ffuncs.append(ops_kernel)
-        mapper[tree[0].root] = ops_par_loop_call
+
+        # Memory set calls
+        memory_set_calls = [create_ops_memory_set(
+            f, name_to_ops_dat, accessibles_info
+        ) for f in to_dat if not f.is_Constant]
+        # Memory fetch calls
+        memory_fetch_calls = [create_ops_memory_fetch(
+            f, name_to_ops_dat, accessibles_info
+        ) for f in to_dat if not f.is_Constant]
+
+        # mapper[tree[0].root] = ops_par_loop_call
+        mapper[tree[0].root] = List(
+            body=(memory_set_calls, ops_par_loop_call, memory_fetch_calls))
         mapper.update({i.root: mapper.get(i.root) for i in tree})  # Drop trees
 
     iet = Transformer(mapper).visit(iet)

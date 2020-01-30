@@ -62,7 +62,7 @@ def opsit(trees, count, name_to_ops_dat, block, dims):
 
     pre_time_loop = stencil_arrays_initializations + ops_par_loop_init
 
-    return pre_time_loop, ops_kernel, ops_par_loop_call
+    return pre_time_loop, ops_kernel, ops_par_loop_call, node_factory.ops_args
 
 
 def to_ops_stencil(param, accesses):
@@ -200,6 +200,57 @@ def create_ops_dat(f, name_to_ops_dat, block):
                       d_p_val=d_p_val,
                       d_m_val=d_m_val,
                       ops_decl_dat=ops_decl_dat)
+
+
+def create_ops_memory_set(f, name_to_ops_dat, accessibles_info):
+    """To send the data from host to device memory it is necessary to call the
+    OPS API method: `ops_dat_set_data`."""
+    ops_dat = lambda x: (name_to_ops_dat[f.name].indexify([x]) if f.is_TimeFunction
+                         else name_to_ops_dat[f.name])
+
+    if f.is_TimeFunction:
+        return [namespace['ops_dat_set_data'](ops_dat(v.time),
+                                              Byref(f.indexify([v.time, 0, 0])))
+                for k, v in accessibles_info.items() if v.origin_name == f.name]
+
+    else:
+        return [namespace['ops_dat_set_data'](ops_dat(None),
+                                              Byref(f.indexify([0, 0, 0])))]
+
+
+def create_ops_memory_fetch(f, name_to_ops_dat, accessibles_info):
+    """Create memory fetch calls for a given variable.
+
+    To get the data back from the device to host memory it is necessary to call the
+    OPS API method: `ops_dat_fetch_data`.
+
+    Parameters
+    ----------
+    f : Function or TimeFunction
+        Devito object that was transfered into the device memory.
+    name_to_ops_dat : dict of {str : OpsDat}
+        Given a variable name, get the associated OpsDat object.
+    accessibles_info : dict of {str : Accessible_info}
+        Contains the time variable used.
+
+    Returns
+    ------
+    Call
+        The actual call to `ops_dat_fetch_data` method from OPS API.
+    """
+    # Get the OpsDat associated with a Function or TimeFunction f.
+    ops_dat = lambda x: (name_to_ops_dat[f.name].indexify([x]) if f.is_TimeFunction
+                         else name_to_ops_dat[f.name])
+
+    if f.is_TimeFunction:
+        return [namespace['ops_dat_fetch_data'](ops_dat(v.time),
+                                                Byref(f.indexify([v.time, 0, 0])))
+                for k, v in accessibles_info.items() if v.origin_name == f.name
+                and not v.accessible.read_only]
+
+    else:
+        return [namespace['ops_dat_fetch_data'](ops_dat(None),
+                                                Byref(f.indexify([0, 0, 0])))]
 
 
 def create_ops_fetch(f, name_to_ops_dat, time_upper_bound):
