@@ -15,10 +15,11 @@ pytestmark = skipif('noops', whole_module=True)
 from devito import Eq, Function, Grid, Operator, TimeFunction, configuration  # noqa
 from devito.ir.equations import ClusterizedEq  # noqa
 from devito.ops.node_factory import OPSNodeFactory  # noqa
-from devito.ops.transformer import create_ops_arg, create_ops_dat, make_ops_ast, to_ops_stencil  # noqa
+from devito.ops.transformer import (create_ops_arg_dat, create_ops_arg_gbl, # noqa
+                                    create_ops_dat, make_ops_ast, to_ops_stencil) # noqa
 from devito.ops.types import Array, OpsAccessible, OpsDat, OpsStencil, OpsBlock  # noqa
-from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl, OpsArgDecl  # noqa
-from devito.symbolics import Byref, ListInitializer, Literal, indexify  # noqa
+from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl # noqa
+from devito.symbolics import Byref, ListInitializer, Literal, ccode, indexify  # noqa
 from devito.tools import dtype_to_cstr  # noqa
 from devito.types import Buffer, Constant, DefaultDimension, Symbol  # noqa
 
@@ -227,30 +228,23 @@ class TestOPSExpression(object):
     def test_create_ops_arg_constant(self):
         a = Constant(name='*a')
 
-        ops_arg = create_ops_arg(a, {}, {}, {})
+        ops_arg = create_ops_arg_gbl(a, {}, {})
 
-        assert ops_arg.ops_type == namespace['ops_arg_gbl']
-        assert str(ops_arg.ops_name) == str(Byref(Constant(name='a')))
-        assert ops_arg.elements_per_point == 1
-        assert ops_arg.dtype == Literal('"%s"' % dtype_to_cstr(a.dtype))
-        assert ops_arg.rw_flag == namespace['ops_read']
+        assert ccode(ops_arg) == 'ops_arg_gbl(&a, 1, "float", OPS_READ)'
 
-    @pytest.mark.parametrize('read', [True, False])
+    @pytest.mark.parametrize('read', ['True', 'False'])
     def test_create_ops_arg_function(self, read):
 
         u = OpsAccessible('u', dtype=np.float32, read_only=read)
         dat = OpsDat('u_dat')
         stencil = OpsStencil('stencil')
         info = AccessibleInfo(u, None, None, None)
+        read_flag = namespace['ops_read'] if read else namespace['ops_write']
 
-        ops_arg = create_ops_arg(u, {'u': info}, {'u': dat}, {u: stencil})
+        ops_arg = create_ops_arg_dat(u, {'u': info}, {'u': dat}, {u: stencil})
 
-        assert ops_arg.ops_type == namespace['ops_arg_dat']
-        assert ops_arg.ops_name == OpsDat('u_dat')
-        assert ops_arg.elements_per_point == 1
-        assert ops_arg.dtype == Literal('"%s"' % dtype_to_cstr(u.dtype))
-        assert ops_arg.rw_flag == \
-            namespace['ops_read'] if read else namespace['ops_write']
+        assert ccode(ops_arg) == 'ops_arg_dat(u_dat, 1, stencil, "float", %s)' \
+            % read_flag
 
     @pytest.mark.parametrize('equation, expected', [
         ('Eq(u.forward, u.dt2 + u.dxr - u.dyr - u.dyl)',
