@@ -15,10 +15,6 @@ OpsDatDecl = namedtuple(
     'OpsDatDecl',
     ['dim_val', 'base_val', 'd_p_val', 'd_m_val', 'ops_decl_dat'])
 
-OpsArgDecl = namedtuple(
-    'OpsArgDecl',
-    ['ops_type', 'ops_name', 'elements_per_point', 'stencil', 'dtype', 'rw_flag'])
-
 # OPS API
 namespace['ops_init'] = 'ops_init'
 namespace['ops_partition'] = 'ops_partition'
