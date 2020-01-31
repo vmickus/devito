@@ -294,15 +294,15 @@ def create_ops_par_loop(trees, ops_kernel, parameters, block, name_to_ops_dat,
 
     ops_args = []
     for p in parameters:
-        ops_arg = create_ops_arg(p,
-                                 accessible_origin,
-                                 name_to_ops_dat,
-                                 par_to_ops_stencil)
+        if p.is_Constant:
+            ops_arg = create_ops_arg_gbl(p, accessible_origin,
+                                         name_to_ops_dat)
+        else:
+            ops_arg = create_ops_arg_dat(p, accessible_origin,
+                                         name_to_ops_dat,
+                                         par_to_ops_stencil)
 
-        ops_args.append(ops_arg.ops_type(ops_arg.ops_name,
-                                         ops_arg.elements_per_point,
-                                         ops_arg.dtype,
-                                         ops_arg.rw_flag))
+        ops_args.append(ops_arg)
 
     ops_par_loop_call = Call(
         namespace['ops_par_loop'], [
@@ -318,30 +318,34 @@ def create_ops_par_loop(trees, ops_kernel, parameters, block, name_to_ops_dat,
     return [range_array_init], ops_par_loop_call
 
 
-def create_ops_arg(p, accessible_origin, name_to_ops_dat, par_to_ops_stencil):
+def create_ops_arg_dat(p, accessible_origin, name_to_ops_dat, par_to_ops_stencil):
     elements_per_point = 1
     dtype = Literal('"%s"' % dtype_to_cstr(p.dtype))
 
-    if p.is_Constant:
-        ops_type = namespace['ops_arg_gbl']
-        ops_name = Byref(Constant(name=p.name[1:]))
-        rw_flag = namespace['ops_read']
+    accessible_info = accessible_origin[p.name]
+
+    if accessible_info.time is None:
+        ops_name = name_to_ops_dat[p.name]
     else:
-        ops_type = namespace['ops_arg_dat']
-        accessible_info = accessible_origin[p.name]
-        ops_name = name_to_ops_dat[p.name] \
-            if accessible_info.time is None \
-            else name_to_ops_dat[accessible_info.origin_name].\
+        ops_name = name_to_ops_dat[accessible_info.origin_name].\
             indexify([Add(accessible_info.time, accessible_info.shift)])
-        rw_flag = namespace['ops_read'] if p.read_only else namespace['ops_write']
 
-    ops_arg = OpsArgDecl(ops_type=ops_type,
-                         ops_name=ops_name,
-                         elements_per_point=elements_per_point,
-                         dtype=dtype,
-                         rw_flag=rw_flag)
+    rw_flag = namespace['ops_read'] if p.read_only else namespace['ops_write']
 
-    return ops_arg
+    return namespace['ops_arg_dat'](ops_name, elements_per_point,
+                                    par_to_ops_stencil[p], dtype, rw_flag)
+
+
+def create_ops_arg_gbl(p, accessible_origin, name_to_ops_dat):
+    elements_per_point = 1
+    dtype = Literal('"%s"' % dtype_to_cstr(p.dtype))
+
+    ops_name = Byref(Constant(name=p.name[1:]))
+    rw_flag = namespace['ops_read']
+
+    return namespace['ops_arg_gbl'](ops_name, elements_per_point,
+                                    dtype, rw_flag)
+
 
 
 def make_ops_ast(expr, nfops, is_write=False):
