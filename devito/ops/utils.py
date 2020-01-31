@@ -17,7 +17,7 @@ OpsDatDecl = namedtuple(
 
 OpsArgDecl = namedtuple(
     'OpsArgDecl',
-    ['ops_type', 'ops_name', 'elements_per_point', 'dtype', 'rw_flag'])
+    ['ops_type', 'ops_name', 'elements_per_point', 'stencil', 'dtype', 'rw_flag'])
 
 # OPS API
 namespace['ops_init'] = 'ops_init'
