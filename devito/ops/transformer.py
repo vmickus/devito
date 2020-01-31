@@ -10,7 +10,7 @@ from devito.ir.iet.nodes import Call, Callable, Expression, IterationTree
 from devito.ir.iet.visitors import FindNodes
 from devito.ops.node_factory import OPSNodeFactory
 from devito.ops.types import Array, OpsAccessible, OpsDat, OpsStencil
-from devito.ops.utils import namespace, OpsDatDecl, OpsArgDecl
+from devito.ops.utils import namespace, OpsDatDecl
 from devito.symbolics import Add, Byref, ListInitializer, Literal
 from devito.tools import dtype_to_cstr
 from devito.types import Constant, DefaultDimension, Symbol

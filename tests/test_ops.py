@@ -18,7 +18,7 @@ from devito.ops.node_factory import OPSNodeFactory  # noqa
 from devito.ops.transformer import (create_ops_arg_dat, create_ops_arg_gbl, # noqa
                                     create_ops_dat, make_ops_ast, to_ops_stencil) # noqa
 from devito.ops.types import Array, OpsAccessible, OpsDat, OpsStencil, OpsBlock  # noqa
-from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl, OpsArgDecl  # noqa
+from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl # noqa
 from devito.symbolics import Byref, ListInitializer, Literal, ccode, indexify  # noqa
 from devito.tools import dtype_to_cstr  # noqa
 from devito.types import Buffer, Constant, DefaultDimension, Symbol  # noqa
