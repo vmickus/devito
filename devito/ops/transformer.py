@@ -205,70 +205,32 @@ def create_ops_dat(f, name_to_ops_dat, block):
 def create_ops_memory_set(f, name_to_ops_dat, accessibles_info):
     """To send the data from host to device memory it is necessary to call the
     OPS API method: `ops_dat_set_data`."""
-    ops_dat = lambda x: (name_to_ops_dat[f.name].indexify([x]) if f.is_TimeFunction
-                         else name_to_ops_dat[f.name])
 
     if f.is_TimeFunction:
-        return [namespace['ops_dat_set_data'](ops_dat(v.time),
-                                              Byref(f.indexify([v.time, 0, 0])))
-                for k, v in accessibles_info.items() if v.origin_name == f.name]
+        return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name].indexify(
+            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
+            for v in accessibles_info.values() if v.origin_name == f.name]
 
     else:
-        return [namespace['ops_dat_set_data'](ops_dat(None),
-                                              Byref(f.indexify([0, 0, 0])))]
+        return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name],
+                                              Byref(f.indexify(build_indexes(f, 0))))]
 
 
 def create_ops_memory_fetch(f, name_to_ops_dat, accessibles_info):
-    """Create memory fetch calls for a given variable.
-
-    To get the data back from the device to host memory it is necessary to call the
-    OPS API method: `ops_dat_fetch_data`.
-
-    Parameters
-    ----------
-    f : Function or TimeFunction
-        Devito object that was transfered into the device memory.
-    name_to_ops_dat : dict of {str : OpsDat}
-        Given a variable name, get the associated OpsDat object.
-    accessibles_info : dict of {str : Accessible_info}
-        Contains the time variable used.
-
-    Returns
-    ------
-    Call
-        The actual call to `ops_dat_fetch_data` method from OPS API.
-    """
-    # Get the OpsDat associated with a Function or TimeFunction f.
-    ops_dat = lambda x: (name_to_ops_dat[f.name].indexify([x]) if f.is_TimeFunction
-                         else name_to_ops_dat[f.name])
+    """To get the data back from the device to host memory it is necessary to call the
+    OPS API method: `ops_dat_fetch_data`."""
 
     if f.is_TimeFunction:
-        return [namespace['ops_dat_fetch_data'](ops_dat(v.time),
-                                                Byref(f.indexify([v.time, 0, 0])))
-                for k, v in accessibles_info.items() if v.origin_name == f.name
-                and not v.accessible.read_only]
+        return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name].indexify(
+            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
+            for v in accessibles_info.values() if v.origin_name == f.name
+            and not v.accessible.read_only]
 
     else:
-        return [namespace['ops_dat_fetch_data'](ops_dat(None),
-                                                Byref(f.indexify([0, 0, 0])))]
-
-
-def create_ops_fetch(f, name_to_ops_dat, time_upper_bound):
-
-    if f.is_TimeFunction:
-        ops_fetch = [namespace['ops_dat_fetch_data'](
-            name_to_ops_dat[f.name].indexify(
-                [Mod(Add(time_upper_bound, -i), f._time_size)]),
-            Byref(f.indexify([Mod(Add(time_upper_bound, -i), f._time_size)])))
-            for i in range(f._time_size)]
-
-    else:
-        # The second parameter is the beginning of the array. But I didn't manage
-        # to generate a C code like: `v`. Instead, I am generating `&(v[0])`.
-        ops_fetch = [namespace['ops_dat_fetch_data'](
-            name_to_ops_dat[f.name], Byref(f.indexify([0])))]
-
-    return ops_fetch
+        return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name],
+                                                Byref(f.indexify(build_indexes(f, 0))))]
 
 
 def create_ops_par_loop(trees, ops_kernel, parameters, block, name_to_ops_dat,
@@ -346,6 +308,11 @@ def create_ops_arg_gbl(p, accessible_origin, name_to_ops_dat):
     return namespace['ops_arg_gbl'](ops_name, elements_per_point,
                                     dtype, rw_flag)
 
+
+
+def build_indexes(f, index):
+    # Build indices access
+    return [index if d.is_Time else 0 for d in f.dimensions]
 
 
 def make_ops_ast(expr, nfops, is_write=False):
