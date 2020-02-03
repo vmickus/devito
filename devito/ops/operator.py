@@ -7,8 +7,8 @@ from devito.logger import warning
 from devito.operator import Operator
 from devito.ops import ops_configuration
 from devito.ops.types import OpsBlock
-from devito.ops.transformer import (create_ops_dat, create_ops_fetch,
-                                    create_ops_memory_fetch, create_ops_memory_set, opsit)
+from devito.ops.transformer import (create_ops_dat, create_ops_memory_fetch,
+                                    create_ops_memory_set, opsit)
 from devito.ops.utils import namespace
 from devito.passes.clusters import Lift, fuse, scalarize, eliminate_arrays, rewrite
 from devito.passes.iet import DataManager, iet_pass
@@ -124,16 +124,11 @@ def make_ops_kernels(iet):
 
     name_to_ops_dat = {}
     pre_time_loop = []
-    after_time_loop = []
     for f in to_dat:
         if f.is_Constant:
             continue
 
         pre_time_loop.extend(list(create_ops_dat(f, name_to_ops_dat, ops_block)))
-        # Copy data from device to host
-        after_time_loop.extend(create_ops_fetch(f,
-                                                name_to_ops_dat,
-                                                f.grid.time_dim.extreme_max))
 
     # Generate ops kernels for each offloadable iteration tree
     mapper = {}
@@ -167,7 +162,7 @@ def make_ops_kernels(iet):
         have the same number of dimensions"
 
     iet = iet._rebuild(body=flatten([ops_init, ops_block_init, pre_time_loop,
-                                     ops_partition, iet.body, after_time_loop,
+                                     ops_partition, iet.body,
                                      ops_exit]))
 
     return iet, {'includes': ['stdio.h', 'ops_seq.h'],

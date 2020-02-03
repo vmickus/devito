@@ -293,41 +293,26 @@ class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u_2d.forward, u_2d + 1)',
-         '[\'ops_dat_fetch_data(u_dat[(time_M)%(2)],0,&(u[(time_M)%(2)]));\','
-         '\'ops_dat_fetch_data(u_dat[(time_M + 1)%(2)],0,&(u[(time_M + 1)%(2)]));\']'),
+         '[\'ops_dat_fetch_data(u_dat[(time + 1)%(2)][0][0],0,(char *)&(u[time + 1][0][0]));\']'),
         ('Eq(v_2d, v_2d.dt.dx + u_2d.dt)',
-         '[\'ops_dat_fetch_data(v_dat[(time_M)%(3)],0,&(v[(time_M)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 1)%(3)],0,&(v[(time_M + 1)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 2)%(3)],0,&(v[(time_M + 2)%(3)]));\','
-         '\'ops_dat_fetch_data(u_dat[(time_M)%(2)],0,&(u[(time_M)%(2)]));\','
-         '\'ops_dat_fetch_data(u_dat[(time_M + 1)%(2)],0,&(u[(time_M + 1)%(2)]));\']'),
+         '[\'ops_dat_fetch_data(v_dat[(time)%(2)][0][0],0,(char *)&(v[time][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-         '[\'ops_dat_fetch_data(v_dat[(time_M)%(3)],0,&(v[(time_M)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 2)%(3)],0,&(v[(time_M + 2)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 1)%(3)],0,&(v[(time_M + 1)%(3)]));\']'),
+         '[\'ops_dat_fetch_data(v_dat[(time + 1)%(2)][0][0][0],0,(char *)&(v[time + 1][0][0][0]));\']'),
         ('Eq(x_3d, x_3d.dt2 + v_3d.dt.dx + u_3d.dxr - u_3d.dxl)',
-         '[\'ops_dat_fetch_data(x_dat[(time_M)%(4)],0,&(x[(time_M)%(4)]));\','
-         '\'ops_dat_fetch_data(x_dat[(time_M + 3)%(4)],0,&(x[(time_M + 3)%(4)]));\','
-         '\'ops_dat_fetch_data(x_dat[(time_M + 2)%(4)],0,&(x[(time_M + 2)%(4)]));\','
-         '\'ops_dat_fetch_data(x_dat[(time_M + 1)%(4)],0,&(x[(time_M + 1)%(4)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M)%(3)],0,&(v[(time_M)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 2)%(3)],0,&(v[(time_M + 2)%(3)]));\','
-         '\'ops_dat_fetch_data(v_dat[(time_M + 1)%(3)],0,&(v[(time_M + 1)%(3)]));\','
-         '\'ops_dat_fetch_data(u_dat[(time_M)%(2)],0,&(u[(time_M)%(2)]));\','
-         '\'ops_dat_fetch_data(u_dat[(time_M + 1)%(2)],0,&(u[(time_M + 1)%(2)]));\']')
+         '[\'ops_dat_fetch_data(x_dat[(time)%(2)][0][0][0],0,(char *)&(x[time][0][0][0]));\']')
     ])
     def test_create_fetch_data(self, equation, expected):
 
         grid_2d = Grid(shape=(4, 4))
         grid_3d = Grid(shape=(4, 4, 4))
 
-        u_2d = TimeFunction(name='u', grid=grid_2d, time_order=1)  # noqa
-        v_2d = TimeFunction(name='v', grid=grid_2d, time_order=2)  # noqa
-        x_2d = TimeFunction(name='x', grid=grid_2d, time_order=3)  # noqa
+        u_2d = TimeFunction(name='u', grid=grid_2d, time_order=1, save=2)  # noqa
+        v_2d = TimeFunction(name='v', grid=grid_2d, time_order=2, save=2)  # noqa
+        x_2d = TimeFunction(name='x', grid=grid_2d, time_order=3, save=2)  # noqa
 
-        u_3d = TimeFunction(name='u', grid=grid_3d, time_order=1)  # noqa
-        v_3d = TimeFunction(name='v', grid=grid_3d, time_order=2)  # noqa
-        x_3d = TimeFunction(name='x', grid=grid_3d, time_order=3)  # noqa
+        u_3d = TimeFunction(name='u', grid=grid_3d, time_order=1, save=2)  # noqa
+        v_3d = TimeFunction(name='v', grid=grid_3d, time_order=2, save=2)  # noqa
+        x_3d = TimeFunction(name='x', grid=grid_3d, time_order=3, save=2)  # noqa
 
         op = Operator(eval(equation))
 
