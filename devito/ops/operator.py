@@ -150,7 +150,6 @@ def make_ops_kernels(iet):
             f, name_to_ops_dat, accessibles_info
         ) for f in to_dat if not f.is_Constant]
 
-        # mapper[tree[0].root] = ops_par_loop_call
         mapper[tree[0].root] = List(
             body=(memory_set_calls, ops_par_loop_call, memory_fetch_calls))
         mapper.update({i.root: mapper.get(i.root) for i in tree})  # Drop trees
