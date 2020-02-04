@@ -62,7 +62,7 @@ def opsit(trees, count, name_to_ops_dat, block, dims):
 
     pre_time_loop = stencil_arrays_initializations + ops_par_loop_init
 
-    return pre_time_loop, ops_kernel, ops_par_loop_call
+    return pre_time_loop, ops_kernel, ops_par_loop_call, node_factory.ops_args
 
 
 def to_ops_stencil(param, accesses):
@@ -202,22 +202,35 @@ def create_ops_dat(f, name_to_ops_dat, block):
                       ops_decl_dat=ops_decl_dat)
 
 
-def create_ops_fetch(f, name_to_ops_dat, time_upper_bound):
+def create_ops_memory_set(f, name_to_ops_dat, accessibles_info):
+    """To send the data from host to device memory it is necessary to call the
+    OPS API method: `ops_dat_set_data`."""
 
     if f.is_TimeFunction:
-        ops_fetch = [namespace['ops_dat_fetch_data'](
-            name_to_ops_dat[f.name].indexify(
-                [Mod(Add(time_upper_bound, -i), f._time_size)]),
-            Byref(f.indexify([Mod(Add(time_upper_bound, -i), f._time_size)])))
-            for i in range(f._time_size)]
+        return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name].indexify(
+            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
+            for v in accessibles_info.values() if v.origin_name == f.name]
 
     else:
-        # The second parameter is the beginning of the array. But I didn't manage
-        # to generate a C code like: `v`. Instead, I am generating `&(v[0])`.
-        ops_fetch = [namespace['ops_dat_fetch_data'](
-            name_to_ops_dat[f.name], Byref(f.indexify([0])))]
+        return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name],
+                                              Byref(f.indexify(build_indexes(f, 0))))]
 
-    return ops_fetch
+
+def create_ops_memory_fetch(f, name_to_ops_dat, accessibles_info):
+    """To get the data back from the device to host memory it is necessary to call the
+    OPS API method: `ops_dat_fetch_data`."""
+
+    if f.is_TimeFunction:
+        return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name].indexify(
+            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
+            for v in accessibles_info.values() if v.origin_name == f.name
+            and not v.accessible.read_only]
+
+    else:
+        return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name],
+                                                Byref(f.indexify(build_indexes(f, 0))))]
 
 
 def create_ops_par_loop(trees, ops_kernel, parameters, block, name_to_ops_dat,
@@ -295,6 +308,11 @@ def create_ops_arg_gbl(p, accessible_origin, name_to_ops_dat):
     return namespace['ops_arg_gbl'](ops_name, elements_per_point,
                                     dtype, rw_flag)
 
+
+
+def build_indexes(f, index):
+    # Build indices access
+    return [index if d.is_Time else 0 for d in f.dimensions]
 
 
 def make_ops_ast(expr, nfops, is_write=False):
