@@ -208,7 +208,7 @@ def create_ops_memory_set(f, name_to_ops_dat, accessibles_info):
 
     if f.is_TimeFunction:
         return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name].indexify(
-            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            [Mod(Add(v.time, v.shift), f._time_size)]),
             Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
             for v in accessibles_info.values() if v.origin_name == f.name]
 
@@ -223,7 +223,7 @@ def create_ops_memory_fetch(f, name_to_ops_dat, accessibles_info):
 
     if f.is_TimeFunction:
         return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name].indexify(
-            build_indexes(f, Mod(Add(v.time, v.shift), f._time_size))),
+            [Mod(Add(v.time, v.shift), f._time_size)]),
             Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
             for v in accessibles_info.values() if v.origin_name == f.name
             and not v.accessible.read_only]
