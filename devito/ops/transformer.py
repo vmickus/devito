@@ -130,7 +130,7 @@ def create_ops_dat(f, name_to_ops_dat, block):
     if f.is_TimeFunction:
         time_pos = f._time_position
         time_index = f.indices[time_pos]
-        time_dims = f.shape[time_pos]
+        time_dims = f.time_order + 1
 
         dim_val = f.shape[:time_pos] + f.shape[time_pos + 1:]
         d_p_val = f._size_nodomain.left[time_pos+1:]
@@ -206,9 +206,11 @@ def create_ops_memory_set(f, name_to_ops_dat, accessibles_info):
     """To send the data from host to device memory it is necessary to call the
     OPS API method: `ops_dat_set_data`."""
 
+    time_range = f.time_order + 1
+
     if f.is_TimeFunction:
         return [namespace['ops_dat_set_data'](name_to_ops_dat[f.name].indexify(
-            [Mod(Add(v.time, v.shift), f._time_size)]),
+            [Mod(Add(v.time, v.shift), time_range)]),
             Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
             for v in accessibles_info.values() if v.origin_name == f.name]
 
@@ -221,9 +223,11 @@ def create_ops_memory_fetch(f, name_to_ops_dat, accessibles_info):
     """To get the data back from the device to host memory it is necessary to call the
     OPS API method: `ops_dat_fetch_data`."""
 
+    time_range = f.time_order + 1
+
     if f.is_TimeFunction:
         return [namespace['ops_dat_fetch_data'](name_to_ops_dat[f.name].indexify(
-            [Mod(Add(v.time, v.shift), f._time_size)]),
+            [Mod(Add(v.time, v.shift), time_range)]),
             Byref(f.indexify(build_indexes(f, Add(v.time, v.shift)))))
             for v in accessibles_info.values() if v.origin_name == f.name
             and not v.accessible.read_only]
@@ -290,7 +294,7 @@ def create_ops_arg_dat(p, accessible_origin, name_to_ops_dat, par_to_ops_stencil
         ops_name = name_to_ops_dat[p.name]
     else:
         ops_name = name_to_ops_dat[accessible_info.origin_name].\
-            indexify([Add(accessible_info.time, accessible_info.shift)])
+            indexify([Mod(Add(accessible_info.time, accessible_info.shift), accessible_info.time_order+1)])
 
     rw_flag = namespace['ops_read'] if p.read_only else namespace['ops_write']
 

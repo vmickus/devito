@@ -159,12 +159,9 @@ class TestOPSExpression(object):
          'w1_d_p, &(w1[0]), "float", "w1time0"), ops_decl_dat(block, 1, w1_dim, '
          'w1_base, w1_d_m, w1_d_p, &(w1[1]), "float", "w1time1")}\']'),
         ('Eq(w2.forward, w2 + v.dx)',
-         '[\'ops_dat w2_dat[5] = {ops_decl_dat(block, 1, w2_dim, w2_base, w2_d_m, '
+         '[\'ops_dat w2_dat[2] = {ops_decl_dat(block, 1, w2_dim, w2_base, w2_d_m, '
          'w2_d_p, &(w2[0]), "float", "w2time0"), ops_decl_dat(block, 1, w2_dim, w2_base, '
-         'w2_d_m, w2_d_p, &(w2[1]), "float", "w2time1"), ops_decl_dat(block, 1, w2_dim, '
-         'w2_base, w2_d_m, w2_d_p, &(w2[2]), "float", "w2time2"), ops_decl_dat(block, 1, '
-         'w2_dim, w2_base, w2_d_m, w2_d_p, &(w2[3]), "float", "w2time3"), ops_decl_dat('
-         'block, 1, w2_dim, w2_base, w2_d_m, w2_d_p, &(w2[4]), "float", "w2time4")}\','
+         'w2_d_m, w2_d_p, &(w2[1]), "float", "w2time1")}\','
          '\'ops_dat v_dat;\','
          '\'v_dat = ops_decl_dat(block, 1, v_dim, v_base, v_d_m, v_d_p, '
          '&(v[0]), "float", "v")\']')
@@ -238,7 +235,7 @@ class TestOPSExpression(object):
         u = OpsAccessible('u', dtype=np.float32, read_only=read)
         dat = OpsDat('u_dat')
         stencil = OpsStencil('stencil')
-        info = AccessibleInfo(u, None, None, None)
+        info = AccessibleInfo(u, None, None, None, None)
         read_flag = namespace['ops_read'] if read else namespace['ops_write']
 
         ops_arg = create_ops_arg_dat(u, {'u': info}, {'u': dat}, {u: stencil})
@@ -287,13 +284,13 @@ class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u_2d.forward, u_2d + 1)',
-         '[\'ops_dat_fetch_data(u_dat[(time + 1)%(3)],0,(char *)&(u[time + 1][0][0]));\']'),
+         '[\'ops_dat_fetch_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\']'),
         ('Eq(v_2d, v_2d.dt.dx + u_2d.dt)',
          '[\'ops_dat_fetch_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-         '[\'ops_dat_fetch_data(v_dat[(time + 1)%(6)],0,(char *)&(v[time + 1][0][0][0]));\']'),
+         '[\'ops_dat_fetch_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\']'),
         ('Eq(x_3d, x_3d.dt2 + v_3d.dt.dx + u_3d.dxr - u_3d.dxl)',
-         '[\'ops_dat_fetch_data(x_dat[(time)%(6)],0,(char *)&(x[time][0][0][0]));\']')
+         '[\'ops_dat_fetch_data(x_dat[(time)%(4)],0,(char *)&(x[time][0][0][0]));\']')
     ])
     def test_create_fetch_data(self, equation, expected):
 
@@ -315,16 +312,16 @@ class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u_2d.forward, u_2d + 1)',
-        '[\'ops_dat_set_data(u_dat[(time + 1)%(3)],0,(char *)&(u[time + 1][0][0]));\','
-        '\'ops_dat_set_data(u_dat[(time)%(3)],0,(char *)&(u[time][0][0]));\']'),
+        '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
+        '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\']'),
         ('Eq(v_2d, v_2d.dt.dx + u_2d.dt)',
-        '[\'ops_dat_set_data(u_dat[(time + 1)%(3)],0,(char *)&(u[time + 1][0][0]));\','
-        '\'ops_dat_set_data(u_dat[(time)%(3)],0,(char *)&(u[time][0][0]));\','
+        '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
+        '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\','
         '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\','
         '\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-        '[\'ops_dat_set_data(v_dat[(time + 1)%(6)],0,(char *)&(v[time + 1][0][0][0]));\','
-        '\'ops_dat_set_data(v_dat[(time)%(6)],0,(char *)&(v[time][0][0][0]));\']')
+        '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\','
+        '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')
     ])
     def test_create_set_data(self, equation, expected):
 
