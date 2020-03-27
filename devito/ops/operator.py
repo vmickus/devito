@@ -25,6 +25,7 @@ class OPSOperator(Operator):
     """
 
     _default_headers = Operator._default_headers + ['#define restrict __restrict']
+    _use_ops = True
 
     @classmethod
     @timed_pass(name='specializing.Clusters')
@@ -57,8 +58,12 @@ class OPSOperator(Operator):
     @classmethod
     @timed_pass(name='specializing.IET')
     def _specialize_iet(cls, graph, **kwargs):
-        # Create OPS kernels
-        make_ops_kernels(graph)
+        try:
+            # Create OPS kernels
+            make_ops_kernels(graph)
+        except OPSException:
+            # No kernel can be off-loaded, use the default compiler
+            OPSOperator._use_ops = False
 
         # Symbol definitions
         data_manager = DataManager()
@@ -69,9 +74,11 @@ class OPSOperator(Operator):
 
     @classmethod
     def _build(cls, expressions, **kwargs):
+
         op = super(OPSOperator, cls)._build(expressions, **kwargs)
 
-        op._compiler = ops_configuration['compiler'].copy()
+        if OPSOperator._use_ops:
+            op._compiler = ops_configuration['compiler'].copy()
 
         return op
 
@@ -80,9 +87,13 @@ class OPSOperator(Operator):
         return ''.join(str(kernel.root) for kernel in self._func_table.values())
 
     def _jit_compile(self):
-        self._includes.append('%s.h' % self._soname)
-        if self._lib is None:
-            self._compiler.jit_compile(self._soname, str(self.ccode), str(self.hcode))
+
+        if OPSOperator._use_ops:
+            self._includes.append('%s.h' % self._soname)
+            if self._lib is None:
+                self._compiler.jit_compile(self._soname, str(self.ccode), str(self.hcode))
+        else:
+            self._compiler.jit_compile(self._soname, str(self.ccode))
 
 
 @iet_pass
@@ -93,7 +104,7 @@ def make_ops_kernels(iet):
 
     # If there is no affine trees, then there is no loop to be optimized using OPS.
     if not affine_trees:
-        return iet, {}
+        raise OPSException("No off-loadable code found.")
 
     ops_init = Call(namespace['ops_init'], [0, 0, 2])
     ops_partition = Call(namespace['ops_partition'], Literal('""'))
@@ -167,3 +178,7 @@ def make_ops_kernels(iet):
     return iet, {'includes': ['stdio.h', 'ops_seq.h'],
                  'ffuncs': ffuncs,
                  'headers': [namespace['ops_define_dimension'](dims[0])]}
+
+
+class OPSException(Exception):
+    pass
