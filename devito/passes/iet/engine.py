@@ -105,8 +105,8 @@ class Graph(object):
                     self.efuncs[n] = efunc
 
         # Apply `func` to the external functions
-        for i in range(len(self.ffuncs)):
-            self.ffuncs[i], _ = func(self.ffuncs[i], **kwargs)
+        #for i in range(len(self.ffuncs)):
+        #    self.ffuncs[i], _ = func(self.ffuncs[i], **kwargs)
 
 
 def iet_pass(func):
