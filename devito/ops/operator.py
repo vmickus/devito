@@ -61,6 +61,7 @@ class OPSOperator(Operator):
         try:
             # Create OPS kernels
             make_ops_kernels(graph)
+            OPSOperator._use_ops = True
         except OPSException:
             # No kernel can be off-loaded, use the default compiler
             OPSOperator._use_ops = False
@@ -101,7 +102,7 @@ def make_ops_kernels(iet):
     warning("The OPS backend is still work-in-progress")
 
     affine_trees = find_affine_trees(iet).items()
-
+    
     # If there is no affine trees, then there is no loop to be optimized using OPS.
     if not affine_trees:
         raise OPSException("No off-loadable code found.")
@@ -176,7 +177,7 @@ def make_ops_kernels(iet):
                                      ops_exit]))
 
     return iet, {'includes': ['stdio.h', 'ops_seq.h'],
-                 'ffuncs': ffuncs,
+                 #'ffuncs': ffuncs,
                  'headers': [namespace['ops_define_dimension'](dims[0])]}
 
 
