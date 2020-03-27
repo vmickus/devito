@@ -304,11 +304,11 @@ class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u_2d.forward, u_2d + 1)',
-         '[\'ops_dat_fetch_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\']'),
+         '[\'ops_dat_fetch_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\']'),  # noqa
         ('Eq(v_2d, v_2d.dt.dx + u_2d.dt)',
          '[\'ops_dat_fetch_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-         '[\'ops_dat_fetch_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\']'),
+         '[\'ops_dat_fetch_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\']'),  # noqa
         ('Eq(x_3d, x_3d.dt2 + v_3d.dt.dx + u_3d.dxr - u_3d.dxl)',
          '[\'ops_dat_fetch_data(x_dat[(time)%(4)],0,(char *)&(x[time][0][0][0]));\']')
     ])
@@ -340,8 +340,9 @@ class TestOPSExpression(object):
          '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\','
          '\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-         '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\','
-         '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')])
+         '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\',' # noqa
+         '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')
+    ])
     def test_create_set_data(self, equation, expected):
 
         grid_2d = Grid(shape=(4, 4))

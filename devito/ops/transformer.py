@@ -294,7 +294,8 @@ def create_ops_arg_dat(p, accessible_origin, name_to_ops_dat, par_to_ops_stencil
         ops_name = name_to_ops_dat[p.name]
     else:
         ops_name = name_to_ops_dat[accessible_info.origin_name].\
-            indexify([Mod(Add(accessible_info.time, accessible_info.shift), accessible_info.time_order+1)])
+            indexify([Mod(Add(accessible_info.time, accessible_info.shift),
+                          accessible_info.time_order+1)])
 
     rw_flag = namespace['ops_read'] if p.read_only else namespace['ops_write']
 
@@ -311,7 +312,6 @@ def create_ops_arg_gbl(p, accessible_origin, name_to_ops_dat):
 
     return namespace['ops_arg_gbl'](ops_name, elements_per_point,
                                     dtype, rw_flag)
-
 
 
 def build_indexes(f, index):

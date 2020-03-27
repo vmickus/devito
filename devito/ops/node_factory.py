@@ -51,7 +51,8 @@ class OPSNodeFactory(object):
                 symbol_to_access,
                 time_index.var if indexed.function.is_TimeFunction else None,
                 time_index.shift if indexed.function.is_TimeFunction else None,
-                indexed.function.time_order if indexed.function.is_TimeFunction else None,
+                indexed.function.time_order if indexed.function.is_TimeFunction
+                else None,
                 indexed.function.name)
 
             self.ops_args[ops_arg_id] = accessible_info

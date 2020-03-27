@@ -101,7 +101,7 @@ class OPSOperator(Operator):
 def make_ops_kernels(iet):
     warning("The OPS backend is still work-in-progress")
 
-    # If starts with OPS_Kernel, means that we are trying to transform the 
+    # If starts with OPS_Kernel, means that we are trying to transform the
     # kernel in ops_kernel... which does not make sense, so we skip it.
     if iet.name.startswith(namespace['ops_kernel']('')):
         return iet, {}
