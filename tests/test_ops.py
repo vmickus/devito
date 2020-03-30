@@ -92,6 +92,21 @@ class TestOPSExpression(object):
             assert str(func.root) == expected
 
     @pytest.mark.parametrize('equation, expected', [
+        ('Eq(v, v.backward + 1)',
+         'void OPS_Kernel_0(ACC<float> & ut01, const ACC<float> & ut11)\n'
+         '{\n  ut01(0, 0) = 1 + ut11(0, 0);\n}')
+    ])
+    def test_kernel_backward(self, equation, expected):
+        grid = Grid(shape=(4, 4))
+
+        v = TimeFunction(name='u', grid=grid)  # noqa
+
+        operator = Operator(eval(equation))
+
+        for func in operator._func_table.values():
+            assert str(func.root) == expected
+
+    @pytest.mark.parametrize('equation, expected', [
         ('Eq(u,3*a - 4**a)', '{ "ut1": [[0]] }'),
         ('Eq(u, u.dxl)', '{ "ut1": [[0], [-1], [-2]] }'),
         ('Eq(u,v+1)', '{ "ut1": [[0]], "vt1": [[0]] }')
