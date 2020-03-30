@@ -15,10 +15,10 @@ pytestmark = skipif('noops', whole_module=True)
 from devito import Eq, Function, Grid, Operator, TimeFunction, configuration  # noqa
 from devito.ir.equations import ClusterizedEq  # noqa
 from devito.ops.node_factory import OPSNodeFactory  # noqa
-from devito.ops.transformer import (create_ops_arg_dat, create_ops_arg_gbl, # noqa
-                                    create_ops_dat, make_ops_ast, to_ops_stencil) # noqa
+from devito.ops.transformer import (create_ops_arg_dat, create_ops_arg_gbl,  # noqa
+                                    create_ops_dat, make_ops_ast, to_ops_stencil)  # noqa
 from devito.ops.types import Array, OpsAccessible, OpsDat, OpsStencil, OpsBlock  # noqa
-from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl # noqa
+from devito.ops.utils import namespace, AccessibleInfo, OpsDatDecl  # noqa
 from devito.symbolics import Byref, ListInitializer, Literal, ccode, indexify  # noqa
 from devito.tools import dtype_to_cstr  # noqa
 from devito.types import Buffer, Constant, DefaultDimension, Symbol  # noqa
@@ -27,41 +27,41 @@ from devito.types import Buffer, Constant, DefaultDimension, Symbol  # noqa
 class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation, expected', [
-        ('Eq(u,3*a - 4**a)', 'void OPS_Kernel_0(ACC<float> & ut00)\n'
-         '{\n  ut00(0) = -2.97015324253729F;\n}'),
+        ('Eq(u,3*a - 4**a)', 'void OPS_Kernel_0(ACC<float> & ut01)\n'
+         '{\n  ut01(0) = -2.97015324253729F;\n}'),
         ('Eq(u, u.dxl)',
-         'void OPS_Kernel_0(ACC<float> & ut00, const float *h_x)\n'
+         'void OPS_Kernel_0(ACC<float> & ut01, const float *h_x)\n'
          '{\n  float r0 = 1.0/*h_x;\n  '
-         'ut00(0) = (-2.0F*ut00(-1) + 5.0e-1F*ut00(-2) + 1.5F*ut00(0))*r0;\n}'),
-        ('Eq(v,1)', 'void OPS_Kernel_0(ACC<float> & vt00)\n'
-         '{\n  vt00(0, 0) = 1;\n}'),
+         'ut01(0) = (-2.0F*ut01(-1) + 5.0e-1F*ut01(-2) + 1.5F*ut01(0))*r0;\n}'),
+        ('Eq(v,1)', 'void OPS_Kernel_0(ACC<float> & vt01)\n'
+         '{\n  vt01(0, 0) = 1;\n}'),
         ('Eq(v,v.dxl + v.dxr - v.dyr - v.dyl)',
-         'void OPS_Kernel_0(ACC<float> & vt00, const float *h_x, const float *h_y)\n'
+         'void OPS_Kernel_0(ACC<float> & vt01, const float *h_x, const float *h_y)\n'
          '{\n  float r1 = 1.0/*h_y;\n  float r0 = 1.0/*h_x;\n  '
-         'vt00(0, 0) = (5.0e-1F*(-vt00(2, 0) + vt00(-2, 0)) + 2.0F*(-vt00(-1, 0) + '
-         'vt00(1, 0)))*r0 + (5.0e-1F*(-vt00(0, -2) + vt00(0, 2)) + '
-         '2.0F*(-vt00(0, 1) + vt00(0, -1)))*r1;\n}'),
+         'vt01(0, 0) = (5.0e-1F*(-vt01(2, 0) + vt01(-2, 0)) + 2.0F*(-vt01(-1, 0) + '
+         'vt01(1, 0)))*r0 + (5.0e-1F*(-vt01(0, -2) + vt01(0, 2)) + '
+         '2.0F*(-vt01(0, 1) + vt01(0, -1)))*r1;\n}'),
         ('Eq(v,v**2 - 3*v)',
-         'void OPS_Kernel_0(ACC<float> & vt00)\n'
-         '{\n  vt00(0, 0) = -3*vt00(0, 0) + vt00(0, 0)*vt00(0, 0);\n}'),
+         'void OPS_Kernel_0(ACC<float> & vt01)\n'
+         '{\n  vt01(0, 0) = -3*vt01(0, 0) + vt01(0, 0)*vt01(0, 0);\n}'),
         ('Eq(v,a*v + b)',
-         'void OPS_Kernel_0(ACC<float> & vt00)\n'
-         '{\n  vt00(0, 0) = 9.87e-7F + 1.43F*vt00(0, 0);\n}'),
+         'void OPS_Kernel_0(ACC<float> & vt01)\n'
+         '{\n  vt01(0, 0) = 9.87e-7F + 1.43F*vt01(0, 0);\n}'),
         ('Eq(w,c*w**2)',
-         'void OPS_Kernel_0(ACC<float> & wt00)\n'
-         '{\n  wt00(0, 0, 0) = 999999999999999*(wt00(0, 0, 0)*wt00(0, 0, 0));\n}'),
+         'void OPS_Kernel_0(ACC<float> & wt01)\n'
+         '{\n  wt01(0, 0, 0) = 999999999999999*(wt01(0, 0, 0)*wt01(0, 0, 0));\n}'),
         ('Eq(u.forward,u+1)',
-         'void OPS_Kernel_0(const ACC<float> & ut00, ACC<float> & ut10)\n'
-         '{\n  ut10(0) = 1 + ut00(0);\n}'),
+         'void OPS_Kernel_0(const ACC<float> & ut01, ACC<float> & ut11)\n'
+         '{\n  ut11(0) = 1 + ut01(0);\n}'),
         ('Eq(v.forward, v.dt - v.laplace + v.dt)',
-         'void OPS_Kernel_0(const ACC<float> & vt00, ACC<float> & vt10, '
+         'void OPS_Kernel_0(const ACC<float> & vt01, ACC<float> & vt11, '
          'const float *dt, const float *h_x, const float *h_y)\n'
          '{\n  float r2 = 1.0/*dt;\n'
          '  float r1 = 1.0/(*h_y**h_y);\n'
          '  float r0 = 1.0/(*h_x**h_x);\n'
-         '  vt10(0, 0) = (-(vt00(1, 0) + vt00(-1, 0)) + 2.0F*vt00(0, 0))*r0 + '
-         '(-(vt00(0, 1) + vt00(0, -1)) + 2.0F*vt00(0, 0))*r1 + '
-         '2*(-vt00(0, 0) + vt10(0, 0))*r2;\n}'),
+         '  vt11(0, 0) = (-(vt01(1, 0) + vt01(-1, 0)) + 2.0F*vt01(0, 0))*r0 + '
+         '(-(vt01(0, 1) + vt01(0, -1)) + 2.0F*vt01(0, 0))*r1 + '
+         '2*(-vt01(0, 0) + vt11(0, 0))*r2;\n}'),
     ])
     def test_kernel_generation(self, equation, expected):
         """
@@ -92,9 +92,9 @@ class TestOPSExpression(object):
             assert str(func.root) == expected
 
     @pytest.mark.parametrize('equation, expected', [
-        ('Eq(u,3*a - 4**a)', '{ "ut0": [[0]] }'),
-        ('Eq(u, u.dxl)', '{ "ut0": [[0], [-1], [-2]] }'),
-        ('Eq(u,v+1)', '{ "ut0": [[0]], "vt0": [[0]] }')
+        ('Eq(u,3*a - 4**a)', '{ "ut1": [[0]] }'),
+        ('Eq(u, u.dxl)', '{ "ut1": [[0], [-1], [-2]] }'),
+        ('Eq(u,v+1)', '{ "ut1": [[0]], "vt1": [[0]] }')
     ])
     def test_accesses_extraction(self, equation, expected):
         grid_1d = Grid(shape=(4))
@@ -312,17 +312,16 @@ class TestOPSExpression(object):
 
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u_2d.forward, u_2d + 1)',
-        '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
-        '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\']'),
+         '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
+         '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\']'),
         ('Eq(v_2d, v_2d.dt.dx + u_2d.dt)',
-        '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
-        '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\','
-        '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\','
-        '\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0]));\']'),
+         '[\'ops_dat_set_data(u_dat[(time + 1)%(2)],0,(char *)&(u[time + 1][0][0]));\','
+         '\'ops_dat_set_data(u_dat[(time)%(2)],0,(char *)&(u[time][0][0]));\','
+         '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\','
+         '\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-        '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\','
-        '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')
-    ])
+         '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\','
+         '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')])
     def test_create_set_data(self, equation, expected):
 
         grid_2d = Grid(shape=(4, 4))
