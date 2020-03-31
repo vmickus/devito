@@ -94,12 +94,17 @@ class TestOPSExpression(object):
     @pytest.mark.parametrize('equation, expected', [
         ('Eq(v, v.backward + 1)',
          'void OPS_Kernel_0(ACC<float> & ut01, const ACC<float> & ut11)\n'
-         '{\n  ut01(0, 0) = 1 + ut11(0, 0);\n}')
+         '{\n  ut01(0, 0) = 1 + ut11(0, 0);\n}'),
+        ('Eq(v.forward, v.backward + v.dx)',
+         'void OPS_Kernel_0(const ACC<float> & ut01, const ACC<float> & ut11, '
+         'ACC<float> & ut21, const float *h_x)\n'
+         '{\n  float r0 = 1.0/*h_x;\n'
+         '  ut21(0, 0) = -ut01(0, 0)*r0 + ut01(1, 0)*r0 + ut11(0, 0);\n}')
     ])
     def test_kernel_backward(self, equation, expected):
         grid = Grid(shape=(4, 4))
 
-        v = TimeFunction(name='u', grid=grid)  # noqa
+        v = TimeFunction(name='u', grid=grid, space_order=2)  # noqa
 
         operator = Operator(eval(equation))
 
