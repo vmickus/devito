@@ -184,7 +184,7 @@ def create_ops_dat(f, name_to_ops_dat, block):
                 Symbol(base.name),
                 Symbol(d_m.name),
                 Symbol(d_p.name),
-                Byref(f.indexify([0])),
+                Literal("(float **) NULL"),
                 Literal('"%s"' % f._C_typedata),
                 Literal('"%s"' % f.name)
             )
