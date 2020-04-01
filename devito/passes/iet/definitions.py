@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 import cgen as c
 
-from devito.ir import (ArrayCast, Element, Expression, List, LocalExpression,
-                       FindNodes, MapExprStmts, Transformer)
+from devito.ir import (ArrayCast, Call, Element, Expression, List,
+                       LocalExpression, FindNodes, MapExprStmts, Transformer)
 from devito.passes.iet.engine import iet_pass
 from devito.symbolics import ccode
 from devito.tools import filter_sorted, flatten
@@ -182,7 +182,8 @@ class DataManager(object):
         need_cast = {i for i in set().union(*[i.functions for i in exprs]) if i.is_Tensor}
         need_cast.update({i for i in iet.parameters if i.is_Array})
 
-        casts = tuple(ArrayCast(i) for i in iet.parameters if i in need_cast)
+        casts = tuple(ArrayCast(i)
+                      for i in iet.parameters if i in need_cast or i.is_Input)
         iet = iet._rebuild(body=casts + iet.body)
 
         return iet, {}
