@@ -183,7 +183,7 @@ class DataManager(object):
         need_cast.update({i for i in iet.parameters if i.is_Array})
 
         casts = tuple(ArrayCast(i)
-                      for i in iet.parameters if i in need_cast or i.is_Input)
+                      for i in iet.parameters if i in need_cast or (i.is_Input and i.is_Tensor))
         iet = iet._rebuild(body=casts + iet.body)
 
         return iet, {}
