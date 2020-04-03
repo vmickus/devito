@@ -165,26 +165,26 @@ class TestOPSExpression(object):
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u.forward, u + 1)',
          '[\'ops_dat u_dat[2] = {ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '(float **) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '(float **) NULL, "float", "ut1")}\']'),
+         '(float *) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
+         '(float *) NULL, "float", "ut1")}\']'),
         ('Eq(u.forward, u + v.dx)',
          '[\'ops_dat u_dat[2] = {ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '(float **) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '(float **) NULL, "float", "ut1")}\','
+         '(float *) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
+         '(float *) NULL, "float", "ut1")}\','
          '\'ops_dat v_dat;\','
          '\'v_dat = ops_decl_dat(block, 1, v_dim, v_base, v_d_m, v_d_p, '
-         '(float **) NULL, "float", "v")\']'),
+         '(float *) NULL, "float", "v")\']'),
         ('Eq(w1.forward, w1 + 1)',
          '[\'ops_dat w1_dat[2] = {ops_decl_dat(block, 1, w1_dim, w1_base, w1_d_m, '
-         'w1_d_p, (float **) NULL, "float", "w1time0"), ops_decl_dat(block, 1, w1_dim, '
-         'w1_base, w1_d_m, w1_d_p, (float **) NULL, "float", "w1time1")}\']'),
+         'w1_d_p, (float *) NULL, "float", "w1time0"), ops_decl_dat(block, 1, w1_dim, '
+         'w1_base, w1_d_m, w1_d_p, (float *) NULL, "float", "w1time1")}\']'),
         ('Eq(w2.forward, w2 + v.dx)',
          '[\'ops_dat w2_dat[2] = {ops_decl_dat(block, 1, w2_dim, w2_base, w2_d_m, '
-         'w2_d_p, (float **) NULL, "float", "w2time0"), ops_decl_dat(block, 1, w2_dim, w2_base, '
-         'w2_d_m, w2_d_p, (float **) NULL, "float", "w2time1")}\','
+         'w2_d_p, (float *) NULL, "float", "w2time0"), ops_decl_dat(block, 1, w2_dim, w2_base, '
+         'w2_d_m, w2_d_p, (float *) NULL, "float", "w2time1")}\','
          '\'ops_dat v_dat;\','
          '\'v_dat = ops_decl_dat(block, 1, v_dim, v_base, v_d_m, v_d_p, '
-         '(float **) NULL, "float", "v")\']')
+         '(float *) NULL, "float", "v")\']')
     ])
     def test_create_ops_dat(self, equation, expected):
         grid = Grid(shape=(4, 4))
