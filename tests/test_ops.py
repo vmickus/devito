@@ -31,13 +31,13 @@ class TestOPSExpression(object):
          '{\n  ut01(0) = -2.97015324253729F;\n}'),
         ('Eq(u, u.dxl)',
          'void OPS_Kernel_0(ACC<float> & ut01, const float *h_x)\n'
-         '{\n  float r0 = 1.0/*h_x;\n  '
+         '{\n  float r0 = 1.0/(*h_x);\n  '
          'ut01(0) = (-2.0F*ut01(-1) + 5.0e-1F*ut01(-2) + 1.5F*ut01(0))*r0;\n}'),
         ('Eq(v,1)', 'void OPS_Kernel_0(ACC<float> & vt01)\n'
          '{\n  vt01(0, 0) = 1;\n}'),
         ('Eq(v,v.dxl + v.dxr - v.dyr - v.dyl)',
          'void OPS_Kernel_0(ACC<float> & vt01, const float *h_x, const float *h_y)\n'
-         '{\n  float r1 = 1.0/*h_y;\n  float r0 = 1.0/*h_x;\n  '
+         '{\n  float r1 = 1.0/(*h_y);\n  float r0 = 1.0/(*h_x);\n  '
          'vt01(0, 0) = (5.0e-1F*(-vt01(2, 0) + vt01(-2, 0)) + 2.0F*(-vt01(-1, 0) + '
          'vt01(1, 0)))*r0 + (5.0e-1F*(-vt01(0, -2) + vt01(0, 2)) + '
          '2.0F*(-vt01(0, 1) + vt01(0, -1)))*r1;\n}'),
@@ -56,9 +56,9 @@ class TestOPSExpression(object):
         ('Eq(v.forward, v.dt - v.laplace + v.dt)',
          'void OPS_Kernel_0(const ACC<float> & vt01, ACC<float> & vt11, '
          'const float *dt, const float *h_x, const float *h_y)\n'
-         '{\n  float r2 = 1.0/*dt;\n'
-         '  float r1 = 1.0/(*h_y**h_y);\n'
-         '  float r0 = 1.0/(*h_x**h_x);\n'
+         '{\n  float r2 = 1.0/(*dt);\n'
+         '  float r1 = 1.0/((*h_y)*(*h_y));\n'
+         '  float r0 = 1.0/((*h_x)*(*h_x));\n'
          '  vt11(0, 0) = (-(vt01(1, 0) + vt01(-1, 0)) + 2.0F*vt01(0, 0))*r0 + '
          '(-(vt01(0, 1) + vt01(0, -1)) + 2.0F*vt01(0, 0))*r1 + '
          '2*(-vt01(0, 0) + vt11(0, 0))*r2;\n}'),
@@ -98,7 +98,7 @@ class TestOPSExpression(object):
         ('Eq(v.forward, v.backward + v.dx)',
          'void OPS_Kernel_0(const ACC<float> & ut01, const ACC<float> & ut11, '
          'ACC<float> & ut21, const float *h_x)\n'
-         '{\n  float r0 = 1.0/*h_x;\n'
+         '{\n  float r0 = 1.0/(*h_x);\n'
          '  ut21(0, 0) = -ut01(0, 0)*r0 + ut01(1, 0)*r0 + ut11(0, 0);\n}')
     ])
     def test_kernel_backward(self, equation, expected):
@@ -255,7 +255,7 @@ class TestOPSExpression(object):
         u = OpsAccessible('u', dtype=np.float32, read_only=read)
         dat = OpsDat('u_dat')
         stencil = OpsStencil('stencil')
-        info = AccessibleInfo(u, None, None, None, None)
+        info = AccessibleInfo(u, None, None, None, None, None)
         read_flag = namespace['ops_read'] if read else namespace['ops_write']
 
         ops_arg = create_ops_arg_dat(u, {'u': info}, {'u': dat}, {u: stencil})
