@@ -125,6 +125,9 @@ def create_ops_dat(f, name_to_ops_dat, block):
 
     base_val = [Zero() for i in range(ndim)]
 
+    # Get space dimensions associated with the function
+    space_dims = [i for i in f._dimensions if i.is_Space]
+
     # If f is a TimeFunction we need to create a ops_dat for each time stepping
     # variable (eg: t1, t2)
     if f.is_TimeFunction:
@@ -154,7 +157,7 @@ def create_ops_dat(f, name_to_ops_dat, block):
                 Symbol(base.name),
                 Symbol(d_m.name),
                 Symbol(d_p.name),
-                Byref(f.indexify([i])),
+                Literal("(float %s) NULL" % ("*"*(len(space_dims)-1))),
                 Literal('"%s"' % f._C_typedata),
                 Literal('"%s"' % name)
             ))
@@ -184,7 +187,7 @@ def create_ops_dat(f, name_to_ops_dat, block):
                 Symbol(base.name),
                 Symbol(d_m.name),
                 Symbol(d_p.name),
-                Byref(f.indexify([0])),
+                Literal("(float %s) NULL" % ("*"*(len(space_dims)-1))),
                 Literal('"%s"' % f._C_typedata),
                 Literal('"%s"' % f.name)
             )

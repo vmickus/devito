@@ -165,26 +165,26 @@ class TestOPSExpression(object):
     @pytest.mark.parametrize('equation,expected', [
         ('Eq(u.forward, u + 1)',
          '[\'ops_dat u_dat[2] = {ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '&(u[0]), "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '&(u[1]), "float", "ut1")}\']'),
+         '(float *) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
+         '(float *) NULL, "float", "ut1")}\']'),
         ('Eq(u.forward, u + v.dx)',
          '[\'ops_dat u_dat[2] = {ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '&(u[0]), "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
-         '&(u[1]), "float", "ut1")}\','
+         '(float *) NULL, "float", "ut0"), ops_decl_dat(block, 1, u_dim, u_base, u_d_m, u_d_p, '
+         '(float *) NULL, "float", "ut1")}\','
          '\'ops_dat v_dat;\','
          '\'v_dat = ops_decl_dat(block, 1, v_dim, v_base, v_d_m, v_d_p, '
-         '&(v[0]), "float", "v")\']'),
+         '(float *) NULL, "float", "v")\']'),
         ('Eq(w1.forward, w1 + 1)',
          '[\'ops_dat w1_dat[2] = {ops_decl_dat(block, 1, w1_dim, w1_base, w1_d_m, '
-         'w1_d_p, &(w1[0]), "float", "w1time0"), ops_decl_dat(block, 1, w1_dim, '
-         'w1_base, w1_d_m, w1_d_p, &(w1[1]), "float", "w1time1")}\']'),
+         'w1_d_p, (float *) NULL, "float", "w1time0"), ops_decl_dat(block, 1, w1_dim, '
+         'w1_base, w1_d_m, w1_d_p, (float *) NULL, "float", "w1time1")}\']'),
         ('Eq(w2.forward, w2 + v.dx)',
          '[\'ops_dat w2_dat[2] = {ops_decl_dat(block, 1, w2_dim, w2_base, w2_d_m, '
-         'w2_d_p, &(w2[0]), "float", "w2time0"), ops_decl_dat(block, 1, w2_dim, w2_base, '
-         'w2_d_m, w2_d_p, &(w2[1]), "float", "w2time1")}\','
+         'w2_d_p, (float *) NULL, "float", "w2time0"), ops_decl_dat(block, 1, w2_dim, w2_base, '
+         'w2_d_m, w2_d_p, (float *) NULL, "float", "w2time1")}\','
          '\'ops_dat v_dat;\','
          '\'v_dat = ops_decl_dat(block, 1, v_dim, v_base, v_d_m, v_d_p, '
-         '&(v[0]), "float", "v")\']')
+         '(float *) NULL, "float", "v")\']')
     ])
     def test_create_ops_dat(self, equation, expected):
         grid = Grid(shape=(4, 4))
@@ -198,49 +198,6 @@ class TestOPSExpression(object):
 
         for i in eval(expected):
             assert i in str(op)
-
-    def test_create_ops_dat_function(self):
-        grid = Grid(shape=(4))
-
-        u = Function(name='u', grid=grid, space_order=2)
-
-        block = OpsBlock('block')
-
-        name_to_ops_dat = {}
-
-        ops_dat = create_ops_dat(u, name_to_ops_dat, block)
-
-        assert name_to_ops_dat['u'].name == namespace['ops_dat_name'](u.name)
-        assert name_to_ops_dat['u']._C_typename == namespace['ops_dat_type']
-
-        assert ops_dat.dim_val.expr.lhs.name == \
-            namespace['ops_dat_dim'](u.name)
-        assert ops_dat.dim_val.expr.rhs.params == \
-            (Integer(4),)
-
-        assert ops_dat.base_val.expr.lhs.name == \
-            namespace['ops_dat_base'](u.name)
-        assert ops_dat.base_val.expr.rhs.params == (Zero(),)
-
-        assert ops_dat.d_p_val.expr.lhs.name == namespace['ops_dat_d_p'](u.name)
-        assert ops_dat.d_p_val.expr.rhs.params == (Integer(2),)
-
-        assert ops_dat.d_m_val.expr.lhs.name == namespace['ops_dat_d_m'](u.name)
-        assert ops_dat.d_m_val.expr.rhs.params == (Integer(-2),)
-
-        assert ops_dat.ops_decl_dat.expr.lhs == name_to_ops_dat['u']
-        assert type(ops_dat.ops_decl_dat.expr.rhs) == namespace['ops_decl_dat']
-        assert ops_dat.ops_decl_dat.expr.rhs.args == (
-            block,
-            1,
-            Symbol(namespace['ops_dat_dim'](u.name)),
-            Symbol(namespace['ops_dat_base'](u.name)),
-            Symbol(namespace['ops_dat_d_m'](u.name)),
-            Symbol(namespace['ops_dat_d_p'](u.name)),
-            Byref(u.indexify((0,))),
-            Literal('"%s"' % u._C_typedata),
-            Literal('"u"')
-        )
 
     def test_create_ops_arg_constant(self):
         a = Constant(name='*a')
@@ -340,7 +297,7 @@ class TestOPSExpression(object):
          '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0]));\','
          '\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0]));\']'),
         ('Eq(v_3d.forward, v_3d + 1)',
-         '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\',' # noqa
+         '[\'ops_dat_set_data(v_dat[(time + 1)%(3)],0,(char *)&(v[time + 1][0][0][0]));\','  # noqa
          '\'ops_dat_set_data(v_dat[(time)%(3)],0,(char *)&(v[time][0][0][0]));\']')
     ])
     def test_create_set_data(self, equation, expected):
