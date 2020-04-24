@@ -143,8 +143,8 @@ class CUDADeviceCompiler(CompilerOPS):
         self.include_dirs = include_dirs.split(' ')
 
     def __lookup_cmds__(self):
-        self.CC = os.environ.get('CC', 'nvcc')
-        self.CXX = os.environ.get('CXX', 'nvcc')
+        self.CC = 'nvcc'
+        self.CXX = 'nvcc'
 
 
 class CudaHostCompiler(CompilerOPS):
