@@ -140,6 +140,8 @@ class OpsStencil(basic.LocalObject):
 
 class OpsDat(basic.LocalObject):
 
+    is_PassByValue = True
+
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, np.void, *args, **kwargs)
 

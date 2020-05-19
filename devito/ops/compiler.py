@@ -3,7 +3,7 @@ import subprocess
 import warnings
 
 from codepy.jit import compile_from_string
-from devito.logger import warning
+from devito.logger import debug, warning
 from devito.parameters import configuration
 
 
@@ -70,6 +70,8 @@ class CompilerOPS(configuration['compiler'].__class__):
         else:
             warning("Couldn't find OPS_INSTALL_PATH \
                 environment variable, please check your OPS installation")
+
+        debug('End of OPS translation...')
 
     def _compile_cuda(self, soname):
         # CUDA kernel compilation

@@ -98,6 +98,7 @@ class Basic(object):
 
     # Some other properties
     is_PerfKnob = False  # Does it impact the Operator performance?
+    is_PassByValue = False # Added for OPS. Used when we have to pass an local object to a function and it is passed by value.
 
     @abc.abstractmethod
     def __init__(self, *args, **kwargs):
