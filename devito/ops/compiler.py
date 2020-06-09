@@ -54,18 +54,23 @@ class CompilerOPS(configuration['compiler'].__class__):
     def _translate_ops(self, soname, ccode, hcode):
         # Creating files
         file_name = str(self.get_jit_dir().joinpath(soname))
-        h_file = open("%s.h" % (file_name), "r+")
-        c_file = open("%s.cpp" % (file_name), "r+")
 
         if not configuration['jit-backdoor']:
+            h_file = open("%s.h" % (file_name), "w")
+            c_file = open("%s.cpp" % (file_name), "w")
+
             c_file.write(ccode)
             h_file.write(hcode)
+
         else:
-            warning("Dropping generated code in favor of whatever is in \'%s.cpp\' and \'%s.h\'" % (
-                file_name, file_name))
+            warning("Dropping generated code in favor of whatever is in \'%s.cpp\' and \'%s.h\'" % (file_name, file_name))
+
+            h_file = open("%s.h" % (file_name), "r")
+            c_file = open("%s.cpp" % (file_name), "r")
 
         c_file.close()
         h_file.close()
+
 
         if self._ops_install_path:
             # Calling OPS Translator
