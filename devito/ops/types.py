@@ -1,5 +1,6 @@
 import numpy as np
 import sympy
+from ctypes import c_int
 
 import devito.types.basic as basic
 
@@ -138,13 +139,20 @@ class OpsStencil(basic.LocalObject):
         return namespace['ops_stencil_type']
 
 
-class OpsDat(basic.LocalObject):
+class OpsDat(basic.Symbol):
 
     is_PassByValue = True
 
     def __init__(self, name, *args, **kwargs):
+        dtype = 'ops_dat'
         super().__init__(name, np.void, *args, **kwargs)
 
     @property
     def _C_typename(self):
         return namespace['ops_dat_type']
+
+    @property
+    def _C_typedata(self):
+        return namespace['ops_dat_type']
+
+
