@@ -1,4 +1,5 @@
 from devito import Eq
+from devito.compiler import CustomCompiler
 from devito.ir.clusters import Toposort
 from devito.ir.equations import ClusterizedEq
 from devito.ir.iet import Call, Expression, List, find_affine_trees
@@ -10,6 +11,7 @@ from devito.ops.types import OpsBlock
 from devito.ops.transformer import (create_ops_dat, create_ops_memory_fetch,
                                     create_ops_memory_set, opsit)
 from devito.ops.utils import namespace
+from devito.parameters import configuration
 from devito.passes.clusters import Lift, fuse, scalarize, eliminate_arrays, rewrite
 from devito.passes.iet import DataManager, iet_pass
 from devito.symbolics import Literal
@@ -59,12 +61,13 @@ class OPSOperator(Operator):
     @timed_pass(name='specializing.IET')
     def _specialize_iet(cls, graph, **kwargs):
         try:
+            OPSOperator._use_ops = True
             # Create OPS kernels
             make_ops_kernels(graph)
-            OPSOperator._use_ops = True
         except OPSException:
             # No kernel can be off-loaded, use the default compiler
             OPSOperator._use_ops = False
+
 
         # Symbol definitions
         data_manager = DataManager()
@@ -78,14 +81,19 @@ class OPSOperator(Operator):
 
         op = super(OPSOperator, cls)._build(expressions, **kwargs)
 
+        # Build acontece primeiro, depois acontece o specialize_iet
         if OPSOperator._use_ops:
             op._compiler = ops_configuration['compiler'].copy()
+            warning("Using GPU!")
+        else:
+            op._compiler = configuration['compiler'].copy()
+            warning("No code to be offload to GPU. OPS Compiler will not be used.")
 
         return op
 
     @property
     def hcode(self):
-        return ''.join(str(kernel.root) for kernel in self._func_table.values())
+        return '\n'.join(str(kernel.root) for kernel in self._func_table.values())
 
     def _jit_compile(self):
 
@@ -99,11 +107,9 @@ class OPSOperator(Operator):
 
 @iet_pass
 def make_ops_kernels(iet):
-    warning("The OPS backend is still work-in-progress")
-
     # If starts with OPS_Kernel, means that we are trying to transform the
     # kernel in ops_kernel... which does not make sense, so we skip it.
-    if iet.name.startswith(namespace['ops_kernel']('')):
+    if iet.name.startswith(namespace['ops_kernel']('', '')[:-1]):
         return iet, {}
 
     affine_trees = find_affine_trees(iet).items()

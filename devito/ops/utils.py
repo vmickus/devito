@@ -41,7 +41,7 @@ namespace['ops_dat_type'] = 'ops_dat'
 
 # Naming conventions
 namespace['ops_define_dimension'] = lambda i: '#define OPS_%sD' % i
-namespace['ops_kernel'] = lambda i: 'OPS_Kernel_%s' % i
+namespace['ops_kernel'] = lambda i, j: 'OPS_Kernel_%s_%s' % (i, j)
 namespace['ops_stencil_name'] = lambda dims, name, pts: 's%dd_%s_%dpt' % (dims, name, pts)
 namespace['ops_dat_dim'] = lambda i: '%s_dim' % i
 namespace['ops_dat_base'] = lambda i: '%s_base' % i
