@@ -55,7 +55,7 @@ def opsit(trees, count, name_to_ops_dat, block, dims):
         ops_expressions,
         "void",
         parameters)
-    print(parameters, namespace['ops_kernel'](count, Signer._digest(parameters)))
+
     ops_par_loop_init, ops_par_loop_call = create_ops_par_loop(
         trees, ops_kernel, parameters, block,
         name_to_ops_dat, node_factory.ops_args, par_to_ops_stencil, dims)
