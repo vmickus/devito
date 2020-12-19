@@ -138,7 +138,7 @@ class OpsStencil(basic.LocalObject):
         return namespace['ops_stencil_type']
 
 
-class OpsDat(basic.Object):
+class OpsDat(basic.LocalObject):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, np.void, *args, **kwargs)

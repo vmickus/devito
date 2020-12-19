@@ -188,7 +188,7 @@ class CGen(Visitor):
             try:
                 if isinstance(i, Call):
                     ret.append(self.visit(i).text)
-                elif i.is_LocalObject:
+                elif i.is_LocalObject and i._C_typename != 'ops_dat':
                     ret.append('&%s' % i._C_name)
                 elif i.is_Array:
                     ret.append("(%s)%s" % (i._C_typename, i.name))
